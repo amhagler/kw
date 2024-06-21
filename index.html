@@ -17,6 +17,24 @@
             margin: 20px 0;
         }
 
+        .button-container {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .control-button {
+            margin-bottom: 10px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
         .chart-container {
             margin-top: 40px;
         }
@@ -73,12 +91,17 @@
     </style>
 </head>
 <body>
+    <div class="button-container">
+        <button class="control-button" onclick="showAverages()">Averages</button>
+    </div>
     <h1>Survey Results Visualization</h1>
     <input type="file" id="fileInput" />
     <div id="chartsContainer"></div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+        let surveyData = [];
+        
         document.getElementById('fileInput').addEventListener('change', handleFile, false);
 
         function handleFile(event) {
@@ -92,10 +115,10 @@
                 // Assuming the data is in the first sheet
                 const firstSheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[firstSheetName];
-                const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                surveyData = XLSX.utils.sheet_to_json(worksheet);
 
                 // Process data and render charts
-                processDataAndRenderCharts(jsonData);
+                processDataAndRenderCharts(surveyData);
             };
 
             reader.readAsArrayBuffer(file);
@@ -283,6 +306,32 @@
             }, () => {
                 alert('Failed to copy');
             });
+        }
+
+        function showAverages() {
+            const averages = calculateAverages(surveyData);
+            let message = 'Averages:\n\n';
+            averages.forEach(avg => {
+                message += `${avg.question}: ${avg.average}\n`;
+            });
+            alert(message);
+        }
+
+        function calculateAverages(data) {
+            const averages = [];
+            if (!data || data.length === 0) {
+                return averages;
+            }
+
+            const keys = Object.keys(data[0]).filter(key => !key.includes('Timestamp') && !key.includes('Optional:'));
+            keys.forEach(key => {
+                const ratings = data.map(row => row[key]).filter(value => value !== undefined && !isNaN(value));
+                if (ratings.length > 0) {
+                    const average = (ratings.reduce((sum, value) => sum + value, 0) / ratings.length).toFixed(2);
+                    averages.push({ question: key, average });
+                }
+            });
+            return averages;
         }
     </script>
 </body>
