@@ -18,11 +18,9 @@
         }
 
         .button-container {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            display: flex;
-            flex-direction: column;
+            margin-top: 20px;
+            display: none;
+            justify-content: center;
         }
 
         .control-button {
@@ -37,6 +35,9 @@
 
         .chart-container {
             margin-top: 40px;
+            width: 50%;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .comments {
@@ -81,7 +82,7 @@
         }
 
         canvas {
-            margin-top: 20px;
+            height: 300px; /* Shrink the charts vertically */
         }
 
         .average-text {
@@ -91,11 +92,12 @@
     </style>
 </head>
 <body>
-    <div class="button-container">
-        <button class="control-button" onclick="showAverages()">Averages</button>
-    </div>
     <h1>Survey Results Visualization</h1>
     <input type="file" id="fileInput" />
+    <div class="button-container" id="buttonContainer">
+        <button class="control-button" onclick="showAverages()">Averages</button>
+    </div>
+    <div id="averagesContainer" class="chart-container"></div>
     <div id="chartsContainer"></div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -119,6 +121,9 @@
 
                 // Process data and render charts
                 processDataAndRenderCharts(surveyData);
+
+                // Show the button container
+                document.getElementById('buttonContainer').style.display = 'flex';
             };
 
             reader.readAsArrayBuffer(file);
@@ -310,11 +315,46 @@
 
         function showAverages() {
             const averages = calculateAverages(surveyData);
-            let message = 'Averages:\n\n';
-            averages.forEach(avg => {
-                message += `${avg.question}: ${avg.average}\n`;
+            const container = document.getElementById('averagesContainer');
+            container.innerHTML = ''; // Clear previous content
+
+            const averagesContainer = document.createElement('div');
+            averagesContainer.className = 'chart-container';
+            averagesContainer.style.width = '100%'; // Expand horizontally for readability
+
+            const canvas = document.createElement('canvas');
+            averagesContainer.appendChild(canvas);
+            container.appendChild(averagesContainer);
+
+            const ctx = canvas.getContext('2d');
+            const labels = averages.map(avg => avg.question);
+            const data = averages.map(avg => avg.average);
+
+            const backgroundColors = data.map(avg => getColorForRating(avg, Math.max(...data)));
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Average Ratings',
+                        data: data,
+                        backgroundColor: backgroundColors,
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
             });
-            alert(message);
         }
 
         function calculateAverages(data) {
