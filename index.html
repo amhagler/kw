@@ -24,7 +24,8 @@
             margin-bottom: 20px;
         }
 
-        .comments h3 {
+        .comments h3, .question-title {
+            font-size: 1.5em;
             margin-bottom: 5px;
         }
 
@@ -61,6 +62,11 @@
 
         canvas {
             margin-top: 20px;
+        }
+
+        .average-text {
+            color: blue;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -99,6 +105,7 @@
 
             // Assign respondent IDs
             const respondentIDs = data.map((_, index) => String.fromCharCode(65 + index));
+            const totalRespondents = respondentIDs.length;
 
             // Get the keys in the original order, excluding timestamps
             const keys = Object.keys(data[0]).filter(key => !key.includes('Timestamp'));
@@ -128,17 +135,23 @@
                         }
                     });
 
-                    renderChartAndComments(key, ratings, comments, determineMaxRating(ratings));
+                    renderChartAndComments(key, ratings, comments, determineMaxRating(ratings), totalRespondents);
                 }
             });
         }
 
-        function renderChartAndComments(question, ratings, comments, maxRating) {
+        function renderChartAndComments(question, ratings, comments, maxRating, totalRespondents) {
             const container = document.getElementById('chartsContainer');
             const chartContainer = document.createElement('div');
             chartContainer.className = 'chart-container';
 
             if (ratings.length > 0) {
+                // Create a title for the question
+                const questionTitle = document.createElement('h3');
+                questionTitle.className = 'question-title';
+                questionTitle.textContent = question;
+                chartContainer.appendChild(questionTitle);
+
                 // Create a canvas for the chart
                 const canvas = document.createElement('canvas');
                 chartContainer.appendChild(canvas);
@@ -173,11 +186,21 @@
                     options: {
                         scales: {
                             y: {
-                                beginAtZero: true
+                                beginAtZero: true,
+                                max: totalRespondents,
+                                ticks: {
+                                    stepSize: 1
+                                }
                             }
                         }
                     }
                 });
+
+                const average = (ratings.reduce((sum, value) => sum + value, 0) / ratings.length).toFixed(2);
+                const averageText = document.createElement('div');
+                averageText.className = 'average-text';
+                averageText.textContent = `AVERAGE: ${average}`;
+                chartContainer.appendChild(averageText);
             }
 
             // Create comments section
