@@ -97,7 +97,7 @@
     <div class="button-container" id="buttonContainer">
         <button class="control-button" onclick="showAverages()">Averages</button>
     </div>
-    <div id="averagesContainer" class="chart-container"></div>
+    <div id="averagesContainer"></div>
     <div id="chartsContainer"></div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -318,42 +318,52 @@
             const container = document.getElementById('averagesContainer');
             container.innerHTML = ''; // Clear previous content
 
-            const averagesContainer = document.createElement('div');
-            averagesContainer.className = 'chart-container';
-            averagesContainer.style.width = '100%'; // Expand horizontally for readability
+            const splitAverages = chunkArray(averages, 10); // Split into chunks of 10
 
-            const canvas = document.createElement('canvas');
-            averagesContainer.appendChild(canvas);
-            container.appendChild(averagesContainer);
+            splitAverages.forEach(chunk => {
+                const averagesContainer = document.createElement('div');
+                averagesContainer.className = 'chart-container';
+                averagesContainer.style.width = '100%'; // Expand horizontally for readability
 
-            const ctx = canvas.getContext('2d');
-            const labels = averages.map(avg => avg.question);
-            const data = averages.map(avg => avg.average);
+                const canvas = document.createElement('canvas');
+                averagesContainer.appendChild(canvas);
+                container.appendChild(averagesContainer);
 
-            const backgroundColors = data.map(avg => getColorForRating(avg, Math.max(...data)));
+                const ctx = canvas.getContext('2d');
+                const labels = chunk.map(avg => splitLabel(avg.question));
+                const data = chunk.map(avg => avg.average);
 
-            new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Average Ratings',
-                        data: data,
-                        backgroundColor: backgroundColors,
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                stepSize: 1
+                const backgroundColors = data.map(avg => getColorForRating(avg, Math.max(...data)));
+
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Average Ratings',
+                            data: data,
+                            backgroundColor: backgroundColors,
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    maxRotation: 45,
+                                    minRotation: 45
+                                }
                             }
                         }
                     }
-                }
+                });
             });
         }
 
@@ -372,6 +382,20 @@
                 }
             });
             return averages;
+        }
+
+        function chunkArray(arr, chunkSize) {
+            const chunks = [];
+            for (let i = 0; i < arr.length; i += chunkSize) {
+                chunks.push(arr.slice(i, i + chunkSize));
+            }
+            return chunks;
+        }
+
+        function splitLabel(label) {
+            const words = label.split(' ');
+            const middle = Math.ceil(words.length / 2);
+            return words.slice(0, middle).join(' ') + '\n' + words.slice(middle).join(' ');
         }
     </script>
 </body>
