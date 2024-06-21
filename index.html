@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Survey Results Visualization</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+
+        input {
+            margin: 20px 0;
+        }
+
+        .chart-container {
+            margin-top: 40px;
+        }
+
+        .comments {
+            text-align: left;
+            margin-bottom: 20px;
+        }
+
+        .comments h3 {
+            margin-bottom: 5px;
+        }
+
+        .comment-box {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 5px 0;
+            background-color: #f9f9f9;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .comment-text {
+            flex-grow: 1;
+        }
+
+        .copy-button {
+            margin-left: 10px;
+            padding: 5px 10px;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .separator {
+            border-top: 1px solid #ccc;
+            margin-top: 10px;
+            padding-top: 10px;
+        }
+
+        canvas {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Survey Results Visualization</h1>
+    <input type="file" id="fileInput" />
+    <div id="chartsContainer"></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.getElementById('fileInput').addEventListener('change', handleFile, false);
+
+        function handleFile(event) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(event) {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+
+                // Assuming the data is in the first sheet
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+                // Process data and render charts
+                processDataAndRenderCharts(jsonData);
+            };
+
+            reader.readAsArrayBuffer(file);
+        }
+
+        function processDataAndRenderCharts(data) {
+            const container = document.getElementById('chartsContainer');
+            container.innerHTML = '';
+
+            // Assign respondent IDs
+            const respondentIDs = data.map((_, index) => String.fromCharCode(65 + index));
+
+            // Get the keys in the original order, excluding timestamps
+            const keys = Object.keys(data[0]).filter(key => !key.includes('Timestamp'));
+
+            keys.forEach((key, index) => {
+                const isComment = key.includes('Optional:');
+
+                if (!isComment) {
+                    const ratings = [];
+                    const comments = [];
+
+                    data.forEach((row, rowIndex) => {
+                        const rating = row[key];
+                        const commentKey = keys[index + 1] && keys[index + 1].includes('Optional:') ? keys[index + 1] : undefined;
+                        const comment = commentKey ? row[commentKey] : undefined;
+                        const respondentID = respondentIDs[rowIndex];
+
+                        if (rating !== undefined && !isNaN(rating)) {
+                            ratings.push(rating);
+                        }
+                        if (comment !== undefined) {
+                            comments.push({
+                                id: respondentID,
+                                rating,
+                                comment
+                            });
+                        }
+                    });
+
+                    renderChartAndComments(key, ratings, comments, determineMaxRating(ratings));
+                }
+            });
+        }
+
+        function renderChartAndComments(question, ratings, comments, maxRating) {
+            const container = document.getElementById('chartsContainer');
+            const chartContainer = document.createElement('div');
+            chartContainer.className = 'chart-container';
+
+            if (ratings.length > 0) {
+                // Create a canvas for the chart
+                const canvas = document.createElement('canvas');
+                chartContainer.appendChild(canvas);
+                container.appendChild(chartContainer);
+
+                const ctx = canvas.getContext('2d');
+
+                const maxResponse = Math.max(...ratings);
+                const responseCounts = Array.from({ length: maxResponse }, (_, i) => i + 1).reduce((acc, num) => {
+                    acc[num] = ratings.filter(response => response == num).length;
+                    return acc;
+                }, {});
+
+                const labels = Object.keys(responseCounts);
+                const counts = Object.values(responseCounts);
+
+                // Color coding based on rating ranges
+                const backgroundColors = labels.map(label => getColorForRating(label, maxRating));
+
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: question,
+                            data: counts,
+                            backgroundColor: backgroundColors,
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Create comments section
+            if (comments.length > 0) {
+                const commentsContainer = document.createElement('div');
+                commentsContainer.className = 'comments';
+                const commentsTitle = document.createElement('h3');
+                commentsTitle.textContent = `Comments for: ${question}`;
+                commentsContainer.appendChild(commentsTitle);
+
+                comments.forEach(({ id, rating, comment }) => {
+                    const commentBox = document.createElement('div');
+                    commentBox.className = 'comment-box';
+                    const commentText = document.createElement('span');
+                    commentText.className = 'comment-text';
+                    commentText.textContent = rating !== undefined && !isNaN(rating) ? `${id} (${rating}): ${comment}` : `${id}: ${comment}`;
+                    commentText.style.color = getColorForRating(rating, maxRating);
+
+                    const copyButton = document.createElement('button');
+                    copyButton.className = 'copy-button';
+                    copyButton.textContent = 'Copy';
+                    copyButton.onclick = () => copyToClipboard(comment);
+
+                    commentBox.appendChild(commentText);
+                    commentBox.appendChild(copyButton);
+                    commentsContainer.appendChild(commentBox);
+                });
+
+                chartContainer.appendChild(commentsContainer);
+            }
+
+            const separator = document.createElement('div');
+            separator.className = 'separator';
+            chartContainer.appendChild(separator);
+
+            container.appendChild(chartContainer);
+        }
+
+        function getColorForRating(rating, maxRating) {
+            if (rating === undefined || isNaN(rating)) {
+                return 'black';
+            }
+            const numRating = parseInt(rating, 10);
+            if (maxRating === 5) {
+                if (numRating >= 4) {
+                    return 'darkgreen';
+                } else if (numRating >= 3) {
+                    return 'darkorange';
+                } else if (numRating >= 2) {
+                    return 'lightcoral';
+                } else {
+                    return 'maroon';
+                }
+            } else {
+                if (numRating >= 8) {
+                    return 'darkgreen';
+                } else if (numRating >= 5) {
+                    return 'darkorange';
+                } else if (numRating >= 3) {
+                    return 'lightcoral';
+                } else {
+                    return 'maroon';
+                }
+            }
+        }
+
+        function determineMaxRating(ratings) {
+            if (ratings.length === 0) {
+                return 10;
+            }
+            const maxRating = Math.max(...ratings);
+            return maxRating > 5 ? 10 : 5;
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Copied to clipboard');
+            }, () => {
+                alert('Failed to copy');
+            });
+        }
+    </script>
+</body>
+</html>
