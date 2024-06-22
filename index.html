@@ -89,6 +89,10 @@
             color: blue;
             font-weight: bold;
         }
+
+        .chart-container + .chart-container {
+            margin-top: 20px; /* Add space between average charts */
+        }
     </style>
 </head>
 <body>
@@ -324,6 +328,7 @@
                 const averagesContainer = document.createElement('div');
                 averagesContainer.className = 'chart-container';
                 averagesContainer.style.width = '100%'; // Expand horizontally for readability
+                averagesContainer.style.marginTop = '20px'; // Add space between average charts
 
                 const canvas = document.createElement('canvas');
                 averagesContainer.appendChild(canvas);
