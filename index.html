@@ -77,6 +77,14 @@
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
             margin: 10px; /* Add margin for space between charts */
             vertical-align: top; /* Align charts vertically */
+            text-align: center; /* Center the content inside the chart container */
+        }
+
+        .charts-wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center; /* Center the chart containers */
+            width: 100%;
         }
 
         .comments {
@@ -257,7 +265,7 @@
     <div class="button-container" id="buttonContainer">
     </div>
     <div id="averagesContainer"></div>
-    <div id="chartsContainer"></div>
+    <div class="charts-wrapper" id="chartsContainer"></div>
     <div class="footer">Survey Results Visualization</div>
 
     <div id="popup" class="popup">
@@ -311,6 +319,7 @@
 
             // Get the keys in the original order, excluding timestamps
             const keys = Object.keys(data[0]).filter(key => !key.includes('Timestamp'));
+            console.log('Processing keys:', keys);
 
             keys.forEach((key, index) => {
                 const isComment = key.includes('Optional:');
@@ -338,6 +347,20 @@
                     });
 
                     renderChartAndComments(key, ratings, comments, determineMaxRating(ratings), totalRespondents);
+                } else {
+                    // Handle paragraph answers as comments
+                    const comments = [];
+                    data.forEach((row, rowIndex) => {
+                        const comment = row[key];
+                        const respondentID = respondentIDs[rowIndex];
+                        if (comment !== undefined) {
+                            comments.push({
+                                id: respondentID,
+                                comment
+                            });
+                        }
+                    });
+                    renderParagraphComments(key, comments);
                 }
             });
         }
@@ -467,6 +490,32 @@
             separator.className = 'separator';
             chartContainer.appendChild(separator);
 
+            container.appendChild(chartContainer);
+        }
+
+        function renderParagraphComments(question, comments) {
+            const container = document.getElementById('chartsContainer');
+            const chartContainer = document.createElement('div');
+            chartContainer.className = 'chart-container';
+
+            const commentsContainer = document.createElement('div');
+            commentsContainer.className = 'comments';
+            const commentsTitle = document.createElement('h3');
+            commentsTitle.textContent = `Comments for: ${question}`;
+            commentsContainer.appendChild(commentsTitle);
+
+            comments.forEach(({ id, comment }) => {
+                const commentBox = document.createElement('div');
+                commentBox.className = 'comment-box';
+                commentBox.setAttribute('data-respondent-id', id); // Add respondent ID
+                const commentText = document.createElement('span');
+                commentText.className = 'comment-text';
+                commentText.textContent = `${id}: ${comment}`;
+                commentBox.appendChild(commentText);
+                commentsContainer.appendChild(commentBox);
+            });
+
+            chartContainer.appendChild(commentsContainer);
             container.appendChild(chartContainer);
         }
 
