@@ -21,6 +21,18 @@
             margin: 20px 0;
             text-align: center;
             font-size: 2em;
+            border: none;
+            outline: none;
+        }
+
+        #titleInput {
+            text-align: center;
+            border: none;
+            outline: none;
+            font-size: 2em;
+            color: #6F263D; /* Burgundy */
+            width: 100%;
+            max-width: 800px;
         }
 
         input[type="file"] {
@@ -34,11 +46,13 @@
         .button-container {
             margin-top: 20px;
             display: none;
-            justify-content: center;
+            justify-content: flex-start;
+            flex-direction: column;
+            align-items: flex-start;
         }
 
         .control-button {
-            margin-bottom: 10px;
+            margin: 10px 0;
             padding: 10px 20px;
             background-color: #6F263D; /* Burgundy */
             color: white;
@@ -55,13 +69,14 @@
 
         .chart-container {
             margin-top: 40px;
-            width: 80%;
-            max-width: 1000px;
+            width: 40%; /* Shrink width for two charts per row */
+            display: inline-block;
             background-color: white;
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            margin-bottom: 40px;
+            margin: 10px; /* Add margin for space between charts */
+            vertical-align: top; /* Align charts vertically */
         }
 
         .comments {
@@ -93,6 +108,7 @@
 
         .comment-text {
             flex-grow: 1;
+            font-size: 0.8em; /* Shrink comment text */
         }
 
         .copy-button {
@@ -103,6 +119,7 @@
             color: white;
             border-radius: 3px;
             cursor: pointer;
+            font-size: 0.8em; /* Shrink button text */
             transition: background-color 0.3s ease;
         }
 
@@ -120,10 +137,6 @@
             color: #007bff; /* Blue */
             font-weight: bold;
             margin-top: 10px;
-        }
-
-        .chart-container + .chart-container {
-            margin-top: 40px; /* Add space between average charts */
         }
 
         .footer {
@@ -239,10 +252,9 @@
     </style>
 </head>
 <body>
-    <h1>Survey Results Visualization</h1>
+    <input type="text" id="titleInput" value="Survey Results Visualization" />
     <input type="file" id="fileInput" />
     <div class="button-container" id="buttonContainer">
-        <button class="control-button" onclick="showAverages()">Averages</button>
     </div>
     <div id="averagesContainer"></div>
     <div id="chartsContainer"></div>
@@ -258,6 +270,8 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
         let surveyData = [];
         
@@ -277,6 +291,7 @@
                 surveyData = XLSX.utils.sheet_to_json(worksheet);
 
                 // Process data and render charts
+                renderAverages(surveyData);
                 processDataAndRenderCharts(surveyData);
 
                 // Show the button container
@@ -530,11 +545,11 @@
             document.getElementById('popup').style.display = 'none';
         }
 
-        function showAverages() {
-            const averages = calculateAverages(surveyData);
+        function renderAverages(data) {
             const container = document.getElementById('averagesContainer');
             container.innerHTML = ''; // Clear previous content
 
+            const averages = calculateAverages(data);
             createAveragesTable(averages);
         }
 
@@ -631,6 +646,55 @@
             }
             lines.push(currentLine);
             return lines.join('\n');
+        }
+
+        async function generatePDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'pt', 'letter');
+
+            const title = document.getElementById('titleInput').value;
+            const chartsContainer = document.getElementById('chartsContainer');
+            const averageContainer = document.getElementById('averagesContainer');
+
+            doc.setFontSize(24);
+            doc.text(title, 40, 40);
+
+            const addElementToPDF = async (element, yOffset, isFullWidth = false) => {
+                const canvas = await html2canvas(element);
+                const imgData = canvas.toDataURL('image/png');
+                const imgProps = doc.getImageProperties(imgData);
+                const pdfWidth = isFullWidth ? doc.internal.pageSize.getWidth() - 80 : (doc.internal.pageSize.getWidth() - 80) / 2 - 10;
+                const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                
+                if (yOffset + pdfHeight > doc.internal.pageSize.getHeight() - 40) {
+                    doc.addPage();
+                    yOffset = 40;
+                }
+
+                if (!isFullWidth) {
+                    const xOffset = 40 + (element.classList.contains('chart-container') && yOffset % 40 !== 0 ? pdfWidth + 20 : 0);
+                    doc.addImage(imgData, 'PNG', xOffset, yOffset, pdfWidth, pdfHeight);
+                    yOffset = xOffset === 40 ? yOffset + pdfHeight + 20 : yOffset;
+                } else {
+                    doc.addImage(imgData, 'PNG', 40, yOffset, pdfWidth, pdfHeight);
+                    yOffset += pdfHeight + 20;
+                }
+
+                return yOffset;
+            };
+
+            let yOffset = 60;
+            const averageElements = averageContainer.getElementsByTagName('table');
+            for (const averageElement of averageElements) {
+                yOffset = await addElementToPDF(averageElement, yOffset, true);
+            }
+
+            const chartElements = chartsContainer.getElementsByClassName('chart-container');
+            for (const chartElement of chartElements) {
+                yOffset = await addElementToPDF(chartElement, yOffset);
+            }
+
+            doc.save(`${title}_SurveyResults.pdf`);
         }
     </script>
 </body>
