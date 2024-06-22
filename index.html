@@ -17,11 +17,8 @@
         }
 
         h1 {
-            background-color: #007bff;
-            color: white;
-            width: 100%;
-            padding: 20px 0;
-            margin: 0;
+            color: #6F263D; /* Burgundy */
+            margin: 20px 0;
             text-align: center;
             font-size: 2em;
         }
@@ -43,7 +40,7 @@
         .control-button {
             margin-bottom: 10px;
             padding: 10px 20px;
-            background-color: #007bff;
+            background-color: #6F263D; /* Burgundy */
             color: white;
             border: none;
             border-radius: 5px;
@@ -53,18 +50,18 @@
         }
 
         .control-button:hover {
-            background-color: #0056b3;
+            background-color: #A2AAAD; /* Grey */
         }
 
         .chart-container {
             margin-top: 40px;
             width: 80%;
-            max-width: 800px;
+            max-width: 1000px;
             background-color: white;
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
+            margin-bottom: 40px;
         }
 
         .comments {
@@ -75,7 +72,7 @@
         .comments h3, .question-title {
             font-size: 1.5em;
             margin-bottom: 10px;
-            color: #007bff;
+            color: #6F263D; /* Burgundy */
         }
 
         .comment-box {
@@ -87,6 +84,11 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            cursor: pointer;
+        }
+
+        .comment-box:hover {
+            background-color: #e9e9e9;
         }
 
         .comment-text {
@@ -97,7 +99,7 @@
             margin-left: 10px;
             padding: 5px 10px;
             border: none;
-            background-color: #28a745;
+            background-color: #007bff; /* Blue */
             color: white;
             border-radius: 3px;
             cursor: pointer;
@@ -105,7 +107,7 @@
         }
 
         .copy-button:hover {
-            background-color: #218838;
+            background-color: #0056b3;
         }
 
         .separator {
@@ -114,12 +116,8 @@
             padding-top: 10px;
         }
 
-        canvas {
-            height: 300px; /* Shrink the charts vertically */
-        }
-
         .average-text {
-            color: #007bff;
+            color: #007bff; /* Blue */
             font-weight: bold;
             margin-top: 10px;
         }
@@ -129,17 +127,108 @@
         }
 
         .footer {
-            background-color: #007bff;
-            color: white;
+            color: #6F263D; /* Burgundy */
             width: 100%;
             text-align: center;
             padding: 10px 0;
+            margin-top: 40px;
+        }
+
+        table {
+            width: 80%;
+            max-width: 1000px;
+            border-collapse: collapse;
+            margin: 20px 0;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background-color: #6F263D; /* Burgundy */
+            color: white;
+        }
+
+        .bar-container {
+            width: 100%;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+            overflow: hidden;
+            position: relative;
+            height: 20px;
+            margin-top: 5px;
+        }
+
+        .bar {
+            height: 100%;
+            border-radius: 5px;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            position: absolute;
+        }
+
+        .popup {
+            display: none;
             position: fixed;
-            bottom: 0;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 600px;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            z-index: 1000;
+        }
+
+        .popup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .popup-title {
+            font-size: 1.5em;
+            color: #6F263D; /* Burgundy */
+        }
+
+        .popup-close-button {
+            background-color: #A2AAAD; /* Grey */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+
+        .popup-close-button:hover {
+            background-color: #7a8288;
+        }
+
+        .popup-content {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .popup-comment-box {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px 0;
+            background-color: #f9f9f9;
         }
 
         @media (max-width: 768px) {
-            .chart-container {
+            .chart-container, table {
                 width: 90%;
             }
 
@@ -158,6 +247,15 @@
     <div id="averagesContainer"></div>
     <div id="chartsContainer"></div>
     <div class="footer">Survey Results Visualization</div>
+
+    <div id="popup" class="popup">
+        <div class="popup-header">
+            <span class="popup-title">Respondent Comments</span>
+            <button class="popup-close-button" onclick="closePopup()">Close</button>
+        </div>
+        <div class="popup-content" id="popupContent"></div>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
@@ -280,6 +378,32 @@
                                 ticks: {
                                     stepSize: 1
                                 }
+                            },
+                            x: {
+                                ticks: {
+                                    autoSkip: false,
+                                    maxRotation: 0,
+                                    minRotation: 0,
+                                    callback: function(value) {
+                                        return splitLabel(this.getLabelForValue(value));
+                                    }
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                enabled: false
+                            }
+                        },
+                        layout: {
+                            padding: {
+                                top: 20,
+                                right: 20,
+                                bottom: 100,  // Add more padding to the bottom to ensure labels fit
+                                left: 20
                             }
                         }
                     }
@@ -303,6 +427,7 @@
                 comments.forEach(({ id, rating, comment }) => {
                     const commentBox = document.createElement('div');
                     commentBox.className = 'comment-box';
+                    commentBox.setAttribute('data-respondent-id', id); // Add respondent ID
                     const commentText = document.createElement('span');
                     commentText.className = 'comment-text';
                     commentText.textContent = rating !== undefined && !isNaN(rating) ? `${id} (${rating}): ${comment}` : `${id}: ${comment}`;
@@ -316,6 +441,8 @@
                     commentBox.appendChild(commentText);
                     commentBox.appendChild(copyButton);
                     commentsContainer.appendChild(commentBox);
+
+                    commentBox.addEventListener('click', () => showPopup(id)); // Add event listener
                 });
 
                 chartContainer.appendChild(commentsContainer);
@@ -372,59 +499,92 @@
             });
         }
 
+        function showPopup(respondentID) {
+            const popup = document.getElementById('popup');
+            const popupContent = document.getElementById('popupContent');
+            popupContent.innerHTML = ''; // Clear previous content
+
+            // Find all comments by this respondent
+            surveyData.forEach((row, rowIndex) => {
+                const respondent = String.fromCharCode(65 + rowIndex); // Get respondent ID
+                if (respondent === respondentID) {
+                    const keys = Object.keys(row).filter(key => key.includes('Optional:'));
+                    keys.forEach(key => {
+                        if (row[key]) {
+                            const commentBox = document.createElement('div');
+                            commentBox.className = 'popup-comment-box';
+                            commentBox.textContent = `${key}: ${row[key]}`;
+                            const maxRating = determineMaxRating(surveyData.map(row => row[key]).filter(value => value !== undefined && !isNaN(value)));
+                            commentBox.style.color = getColorForRating(row[key], maxRating);
+                            popupContent.appendChild(commentBox);
+                        }
+                    });
+                }
+            });
+
+            // Show the popup
+            popup.style.display = 'block';
+        }
+
+        function closePopup() {
+            document.getElementById('popup').style.display = 'none';
+        }
+
         function showAverages() {
             const averages = calculateAverages(surveyData);
             const container = document.getElementById('averagesContainer');
             container.innerHTML = ''; // Clear previous content
 
-            const splitAverages = chunkArray(averages, 8); // Split into chunks of 8
+            createAveragesTable(averages);
+        }
 
-            splitAverages.forEach(chunk => {
-                const averagesContainer = document.createElement('div');
-                averagesContainer.className = 'chart-container';
-                averagesContainer.style.width = '100%'; // Expand horizontally for readability
-                averagesContainer.style.marginTop = '20px'; // Add space between average charts
+        function createAveragesTable(averages) {
+            const container = document.getElementById('averagesContainer');
+            const table = document.createElement('table');
+            const headerRow = document.createElement('tr');
+            const questionHeader = document.createElement('th');
+            const averageHeader = document.createElement('th');
 
-                const canvas = document.createElement('canvas');
-                averagesContainer.appendChild(canvas);
-                container.appendChild(averagesContainer);
+            questionHeader.textContent = 'Question';
+            averageHeader.textContent = 'Average';
 
-                const ctx = canvas.getContext('2d');
-                const labels = chunk.map(avg => splitLabel(avg.question));
-                const data = chunk.map(avg => avg.average);
+            headerRow.appendChild(questionHeader);
+            headerRow.appendChild(averageHeader);
+            table.appendChild(headerRow);
 
-                const backgroundColors = data.map(avg => getColorForRating(avg, Math.max(...data)));
+            averages.forEach(avg => {
+                const row = document.createElement('tr');
+                const questionCell = document.createElement('td');
+                const averageCell = document.createElement('td');
+                const barContainer = document.createElement('div');
+                const bar = document.createElement('div');
 
-                new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'Average Ratings',
-                            data: data,
-                            backgroundColor: backgroundColors,
-                            borderColor: 'rgba(54, 162, 235, 1)',
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    stepSize: 1
-                                }
-                            },
-                            x: {
-                                ticks: {
-                                    maxRotation: 45,
-                                    minRotation: 45
-                                }
-                            }
-                        }
-                    }
-                });
+                questionCell.textContent = avg.question;
+
+                const ratings = surveyData.map(row => row[avg.question]).filter(value => value !== undefined && !isNaN(value));
+                const maxRating = determineMaxRating(ratings);
+
+                barContainer.className = 'bar-container';
+                bar.className = 'bar';
+                bar.style.width = getBarWidth(avg.average, maxRating);
+                bar.style.backgroundColor = getColorForRating(avg.average, maxRating);
+
+                barContainer.appendChild(bar);
+                questionCell.appendChild(barContainer);
+
+                averageCell.textContent = avg.average;
+                averageCell.style.color = getColorForRating(avg.average, maxRating);
+
+                row.appendChild(questionCell);
+                row.appendChild(averageCell);
+                table.appendChild(row);
             });
+
+            container.appendChild(table);
+        }
+
+        function getBarWidth(average, maxRating) {
+            return `${(average / maxRating) * 100}%`;
         }
 
         function calculateAverages(data) {
@@ -453,9 +613,24 @@
         }
 
         function splitLabel(label) {
+            const maxLength = 20; // Maximum length of each line
+            if (label.length <= maxLength) {
+                return label;
+            }
             const words = label.split(' ');
-            const middle = Math.ceil(words.length / 2);
-            return words.slice(0, middle).join(' ') + '\n' + words.slice(middle).join(' ');
+            let lines = [];
+            let currentLine = words[0];
+
+            for (let i = 1; i < words.length; i++) {
+                if (currentLine.length + words[i].length + 1 <= maxLength) {
+                    currentLine += ' ' + words[i];
+                } else {
+                    lines.push(currentLine);
+                    currentLine = words[i];
+                }
+            }
+            lines.push(currentLine);
+            return lines.join('\n');
         }
     </script>
 </body>
