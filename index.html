@@ -325,7 +325,6 @@
 
             // Get the keys in the original order, excluding timestamps
             const keys = Object.keys(data[0]).filter(key => !key.includes('Timestamp'));
-            console.log('Processing keys:', keys);
 
             keys.forEach((key, index) => {
                 const isComment = key.includes('Optional:');
@@ -500,29 +499,7 @@
         }
 
         function renderParagraphComments(question, comments) {
-            const container = document.getElementById('chartsContainer');
-            const chartContainer = document.createElement('div');
-            chartContainer.className = 'chart-container';
-
-            const commentsContainer = document.createElement('div');
-            commentsContainer.className = 'comments';
-            const commentsTitle = document.createElement('h3');
-            commentsTitle.textContent = `Comments for: ${question}`;
-            commentsContainer.appendChild(commentsTitle);
-
-            comments.forEach(({ id, comment }) => {
-                const commentBox = document.createElement('div');
-                commentBox.className = 'comment-box';
-                commentBox.setAttribute('data-respondent-id', id); // Add respondent ID
-                const commentText = document.createElement('span');
-                commentText.className = 'comment-text';
-                commentText.textContent = `${id}: ${comment}`;
-                commentBox.appendChild(commentText);
-                commentsContainer.appendChild(commentBox);
-            });
-
-            chartContainer.appendChild(commentsContainer);
-            container.appendChild(chartContainer);
+            // Do not render paragraph comments to avoid duplicates
         }
 
         function getColorForRating(rating, maxRating) {
